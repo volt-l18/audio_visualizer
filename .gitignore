@@ -1,0 +1,10 @@
+# Virtual environment
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Output files
+output.mp4
+temp_video.mp4
