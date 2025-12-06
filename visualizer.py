@@ -72,20 +72,23 @@ class VisualizerWindow:
         """
         Updates the visualizer state.
         """
-        # Check if audio has ended
-        if not self.audio_processor.player.playing and not self.audio_ended:
-            self.audio_ended = True
-            self.eos_frames = int(config.EXPORT_FPS * config.EXPORT_EOS_BUFFER_SECONDS)
-
         # Get audio features
         magnitudes = self.audio_processor.get_audio_features()
 
-        if magnitudes is not None:
-            # Smooth the magnitudes
-            self.smoothed_magnitudes = (
-                self.smoothed_magnitudes * config.SMOOTHING
-                + magnitudes * (1 - config.SMOOTHING)
-            )
+        if magnitudes is None:
+            if not self.audio_ended:
+                self.audio_ended = True
+                if config.EXPORT_VIDEO:
+                    self.eos_frames = int(
+                        config.EXPORT_FPS * config.EXPORT_EOS_BUFFER_SECONDS
+                    )
+            return
+
+        # Smooth the magnitudes
+        self.smoothed_magnitudes = (
+            self.smoothed_magnitudes * config.SMOOTHING
+            + magnitudes * (1 - config.SMOOTHING)
+        )
 
     def draw(self):
         """
@@ -95,56 +98,62 @@ class VisualizerWindow:
         self._draw_bars(self.smoothed_magnitudes)
         pygame.display.flip()
 
-        # Capture frame for video export
-        if self.video_exporter:
-            if not self.audio_ended or self.eos_frames > 0:
-                frame_data = pygame.image.tostring(self.screen, "RGBA")
-                self.video_exporter.write_frame(frame_data)
-                if self.audio_ended:
+        if self.audio_ended:
+            if self.video_exporter:
+                if self.eos_frames > 0:
+                    frame_data = pygame.image.tostring(self.screen, "RGBA")
+                    self.video_exporter.write_frame(frame_data)
                     self.eos_frames -= 1
+                else:
+                    self.running = False
             else:
                 self.running = False
+        elif self.video_exporter:
+            frame_data = pygame.image.tostring(self.screen, "RGBA")
+            self.video_exporter.write_frame(frame_data)
 
     def _draw_bars(self, magnitudes):
         """
         Draws the visualizer bars.
 
         Args:
-            magnitudes (list): A list of frequency magnitudes.
+            magnitudes (np.ndarray): A numpy array of frequency magnitudes.
         """
         center_x, center_y = self.width // 2, self.height // 2
         num_bars = len(magnitudes)
 
-        # Create a logarithmic frequency axis for better distribution of bars
-        log_freq_axis = np.logspace(0, np.log10(num_bars), num_bars)
-        log_freq_axis = (log_freq_axis - 1) / (
-            log_freq_axis[-1] - 1
-        )  # Normalize to 0-1
+        # Vectorized calculations
+        angles = (np.arange(num_bars) / num_bars) * 2 * np.pi
+        start_radius = config.MIN_RADIUS
+        end_radii = start_radius + magnitudes * config.BAR_HEIGHT_MULTIPLIER
+
+        cos_angles = np.cos(angles)
+        sin_angles = np.sin(angles)
+
+        start_pos_x = center_x + start_radius * cos_angles
+        start_pos_y = center_y + start_radius * sin_angles
+
+        end_pos_x = center_x + end_radii * cos_angles
+        end_pos_y = center_y + end_radii * sin_angles
+
+        # Color interpolation
+        c1 = np.array(config.BAR_COLOR_START)
+        c2 = np.array(config.BAR_COLOR_END)
+        i_array = np.arange(num_bars) / num_bars
+        colors = c1 + (c2 - c1) * i_array[:, np.newaxis]
+        colors = colors.astype(int)
+
+        # Bar width
+        width_factors = 1 - np.abs(np.arange(num_bars) - num_bars / 2) / (
+            num_bars / 2
+        )
+        bar_widths = (2 + width_factors * 5).astype(int)
 
         for i in range(num_bars):
-            # Bar angle and position
-            angle = (i / num_bars) * 2 * math.pi
-            start_radius = config.MIN_RADIUS
-            end_radius = start_radius + magnitudes[i] * config.BAR_HEIGHT_MULTIPLIER
-            start_pos = (
-                center_x + start_radius * math.cos(angle),
-                center_y + start_radius * math.sin(angle),
-            )
-            end_pos = (
-                center_x + end_radius * math.cos(angle),
-                center_y + end_radius * math.sin(angle),
-            )
-
-            # Bar color interpolation
-            color = tuple(
-                int(c1 + (c2 - c1) * (i / num_bars))
-                for c1, c2 in zip(config.BAR_COLOR_START, config.BAR_COLOR_END)
-            )
-
-            # Bar width
-            # Make bars at the beginning and end of the circle thinner
-            width_factor = 1 - abs(i - num_bars / 2) / (num_bars / 2)
-            bar_width = int(2 + width_factor * 5)
+            start_pos = (start_pos_x[i], start_pos_y[i])
+            end_pos = (end_pos_x[i], end_pos_y[i])
+            color = tuple(colors[i])
+            bar_width = bar_widths[i]
             pygame.draw.line(self.screen, color, start_pos, end_pos, bar_width)
 
     def quit(self):

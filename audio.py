@@ -22,6 +22,7 @@ class AudioProcessor:
         try:
             # Load with pyglet for playback
             self.song = pyglet.media.load(audio_file)
+            self.duration = self.song.duration
             self.player = pyglet.media.Player()
             self.player.queue(self.song)
 
@@ -52,7 +53,7 @@ class AudioProcessor:
         Returns:
             list: A list of processed frequency magnitudes for each bin.
         """
-        if not self.player.playing:
+        if self.player.time >= self.duration:
             return None
 
         # Get current audio position and corresponding sample
