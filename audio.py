@@ -67,17 +67,39 @@ class AudioProcessor:
         # Perform FFT
         fft_result = np.fft.fft(chunk)
         magnitudes = np.abs(fft_result)
-        frequencies = np.fft.fftfreq(len(magnitudes), 1 / self.sr)
 
         # Binning the frequencies
         num_bins = config.BINS
-        log_freq_axis = np.logspace(np.log10(20), np.log10(self.sr / 2), num_bins + 1)
+        bin_boundaries = self._create_log_bins(
+            num_bins, 20, self.sr / 2, self.fft_size, self.sr
+        )
         binned_magnitudes = np.zeros(num_bins)
         for i in range(num_bins):
-            start_freq = log_freq_axis[i]
-            end_freq = log_freq_axis[i + 1]
-            bin_indices = (frequencies >= start_freq) & (frequencies < end_freq)
-            if np.any(bin_indices):
-                binned_magnitudes[i] = magnitudes[bin_indices].max()
+            start_index = bin_boundaries[i]
+            end_index = bin_boundaries[i + 1]
+            if start_index < end_index:
+                binned_magnitudes[i] = magnitudes[start_index:end_index].max()
 
         return binned_magnitudes
+
+    def _create_log_bins(self, num_bins, min_freq, max_freq, fft_size, sr):
+        """
+        Creates logarithmically spaced bins and returns their start and end indices
+        in the FFT result array.
+        """
+        freq_res = sr / fft_size
+        log_min = np.log10(min_freq)
+        log_max = np.log10(max_freq)
+
+        # Create logarithmically spaced frequencies
+        log_freqs = np.logspace(log_min, log_max, num_bins + 1)
+
+        # Convert frequencies to FFT bin indices
+        bin_indices = (log_freqs / freq_res).astype(int)
+
+        # Ensure that each bin has at least one FFT bin
+        for i in range(len(bin_indices) - 1):
+            if bin_indices[i] == bin_indices[i + 1]:
+                bin_indices[i + 1] = bin_indices[i] + 1
+
+        return bin_indices
