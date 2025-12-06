@@ -147,7 +147,7 @@ class VisualizerWindow:
         width_factors = 1 - np.abs(np.arange(num_bars) - num_bars / 2) / (
             num_bars / 2
         )
-        bar_widths = (2 + width_factors * 5).astype(int)
+        bar_widths = (1 + width_factors * 2).astype(int)
 
         for i in range(num_bars):
             start_pos = (start_pos_x[i], start_pos_y[i])
