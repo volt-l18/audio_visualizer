@@ -1,8 +1,10 @@
 # --- Configuration ---
 
-# The path to the audio file to be visualized.
-# Ensure this path is correct for your system.
-AUDIO_FILE = "assets/audio/audio.mp3"
+# The directory containing audio files.
+AUDIO_DIR = "assets/audio"
+
+# Supported audio file extensions.
+SUPPORTED_EXTENSIONS = (".mp3", ".wav", ".flac", ".ogg", ".m4a")
 
 # --- Window Settings ---
 # The initial width and height of the application window.

@@ -38,7 +38,7 @@ class AudioProcessor:
         except Exception as e:
             print(f"Error loading audio: {e}")
             print(
-                f"Please make sure the audio file path is correct in config.py: {audio_file}"
+                f"Please make sure the audio file path is correct: {audio_file}"
             )
             raise
 
