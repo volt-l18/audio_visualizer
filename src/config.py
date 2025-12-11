@@ -13,17 +13,17 @@ MIN_WINDOW_HEIGHT = 300
 
 # --- Visualizer Settings ---
 # The number of frequency bins (bars) to display in the visualizer.
-BINS = 128
+BINS = 256
 
 # The radius of the inner circle of the visualizer. This is the starting point for the bars.
 MIN_RADIUS = 150
 
 # A multiplier for the height of the bars to make the visualization more or less dramatic.
-BAR_HEIGHT_MULTIPLIER = 10
+BAR_HEIGHT_MULTIPLIER = 8
 
 # A smoothing factor for bar height changes. The value should be between 0.0 (no smoothing)
 # and 1.0 (no change). A higher value results in smoother transitions between heights.
-SMOOTHING = 0.8
+SMOOTHING = 0.9
 
 # The background color of the visualizer window.
 BACKGROUND_COLOR = (5, 5, 25)
