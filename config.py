@@ -13,7 +13,7 @@ MIN_WINDOW_HEIGHT = 300
 
 # --- Visualizer Settings ---
 # The number of frequency bins (bars) to display in the visualizer.
-BINS = 256
+BINS = 128
 
 # The radius of the inner circle of the visualizer. This is the starting point for the bars.
 MIN_RADIUS = 150
