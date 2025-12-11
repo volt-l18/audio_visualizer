@@ -19,8 +19,8 @@ A Python-based audio visualizer that generates reactive graphics from audio file
 
 1.  **Clone the repository** (if you haven't already):
     ```bash
-    git clone <repository-url>
-    cd <repository-directory>
+    git clone https://github.com/volt-l18/audio_visualizer.git
+    cd audio_visualizer
     ```
 
 2.  **Create and activate a virtual environment:**
