@@ -2,7 +2,7 @@
 
 # The path to the audio file to be visualized.
 # Ensure this path is correct for your system.
-AUDIO_FILE = "audio_file/audio.mp3"
+AUDIO_FILE = "assets/audio/audio.mp3"
 
 # --- Window Settings ---
 # The initial width and height of the application window.
@@ -47,10 +47,10 @@ EXPORT_VIDEO = True
 EXPORT_WIDTH = 1080
 EXPORT_HEIGHT = 1920
 # The filename of the exported video.
-EXPORT_FILENAME = "output.mp4"
+EXPORT_FILENAME = "outputs/output.mp4"
 # The frame rate of the exported video.
 EXPORT_FPS = 30.0
 # The temporary filename for the video without audio.
-TEMP_VIDEO_FILENAME = "temp_video.mp4"
+TEMP_VIDEO_FILENAME = "outputs/temp_video.mp4"
 # Number of seconds to continue recording frames after End Of Song (EOS) is detected.
 EXPORT_EOS_BUFFER_SECONDS = 2

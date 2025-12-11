@@ -13,7 +13,7 @@ export __NV_PRIME_RENDER_OFFLOAD=1
 export __GLX_VENDOR_LIBRARY_NAME=nvidia
 
 # Execute the main.py script using the python interpreter from the virtual environment
-./.env/bin/python main.py
+./.env/bin/python src/main.py
 
 # To verify that your NVIDIA GPU is being used, you can run 'nvidia-smi' in a separate terminal
 # while the visualizer is running. Look for processes utilizing the GPU.
