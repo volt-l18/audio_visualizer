@@ -35,6 +35,11 @@ class AudioProcessor:
             self.y, self.sr = librosa.load(audio_file, sr=None)
             self.fft_size = config.FFT_SIZE
 
+            # Pre-calculate bin boundaries
+            self.bin_boundaries = self._create_log_bins(
+                config.BINS, 20, self.sr / 2, self.fft_size, self.sr
+            )
+
         except Exception as e:
             print(f"Error loading audio: {e}")
             print(
@@ -79,15 +84,13 @@ class AudioProcessor:
 
         # Binning the frequencies
         num_bins = config.BINS
-        bin_boundaries = self._create_log_bins(
-            num_bins, 20, self.sr / 2, self.fft_size, self.sr
-        )
-        binned_magnitudes = np.zeros(num_bins)
-        for i in range(num_bins):
-            start_index = bin_boundaries[i]
-            end_index = bin_boundaries[i + 1]
-            if start_index < end_index:
-                binned_magnitudes[i] = magnitudes[start_index:end_index].max()
+        bin_boundaries = self.bin_boundaries
+        
+        # Vectorized binning using reduceat
+        # bin_boundaries has num_bins + 1 elements.
+        # reduceat produces results for [b[i]:b[i+1]] for i < len-1, and [b[-1]:] for the last.
+        # We take the first num_bins results, which correspond to our defined bins.
+        binned_magnitudes = np.maximum.reduceat(magnitudes, bin_boundaries)[:num_bins]
 
         return binned_magnitudes
 

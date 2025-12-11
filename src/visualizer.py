@@ -3,7 +3,6 @@ import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame
 import numpy as np
-import math
 import config
 from audio import AudioProcessor
 from video_exporter import VideoExporter
@@ -57,6 +56,30 @@ class VisualizerWindow:
                 config.EXPORT_HEIGHT,
                 self.audio_processor.audio_file,
             )
+
+        self._precalculate_visuals()
+
+    def _precalculate_visuals(self):
+        """Pre-calculates static visual elements."""
+        num_bars = config.BINS
+
+        # Angles
+        self.angles = (np.arange(num_bars) / num_bars) * 2 * np.pi
+        self.cos_angles = np.cos(self.angles)
+        self.sin_angles = np.sin(self.angles)
+
+        # Colors
+        c1 = np.array(config.BAR_COLOR_START)
+        c2 = np.array(config.BAR_COLOR_END)
+        i_array = np.arange(num_bars) / num_bars
+        self.bar_colors = c1 + (c2 - c1) * i_array[:, np.newaxis]
+        self.bar_colors = self.bar_colors.astype(int)
+
+        # Bar widths
+        width_factors = 1 - np.abs(np.arange(num_bars) - num_bars / 2) / (
+            num_bars / 2
+        )
+        self.bar_widths = (1 + width_factors * 2).astype(int)
 
     def run(self):
         """
@@ -149,37 +172,24 @@ class VisualizerWindow:
         num_bars = len(magnitudes)
 
         # Vectorized calculations
-        angles = (np.arange(num_bars) / num_bars) * 2 * np.pi
         start_radius = config.MIN_RADIUS
         end_radii = start_radius + magnitudes * config.BAR_HEIGHT_MULTIPLIER
 
-        cos_angles = np.cos(angles)
-        sin_angles = np.sin(angles)
+        # Use pre-calculated cos/sin
+        # Ensure we don't go out of bounds if magnitudes has different length (unlikely but safe)
+        n = min(num_bars, len(self.cos_angles))
+        
+        start_pos_x = center_x + start_radius * self.cos_angles[:n]
+        start_pos_y = center_y + start_radius * self.sin_angles[:n]
 
-        start_pos_x = center_x + start_radius * cos_angles
-        start_pos_y = center_y + start_radius * sin_angles
+        end_pos_x = center_x + end_radii[:n] * self.cos_angles[:n]
+        end_pos_y = center_y + end_radii[:n] * self.sin_angles[:n]
 
-        end_pos_x = center_x + end_radii * cos_angles
-        end_pos_y = center_y + end_radii * sin_angles
-
-        # Color interpolation
-        c1 = np.array(config.BAR_COLOR_START)
-        c2 = np.array(config.BAR_COLOR_END)
-        i_array = np.arange(num_bars) / num_bars
-        colors = c1 + (c2 - c1) * i_array[:, np.newaxis]
-        colors = colors.astype(int)
-
-        # Bar width
-        width_factors = 1 - np.abs(np.arange(num_bars) - num_bars / 2) / (
-            num_bars / 2
-        )
-        bar_widths = (1 + width_factors * 2).astype(int)
-
-        for i in range(num_bars):
+        for i in range(n):
             start_pos = (start_pos_x[i], start_pos_y[i])
             end_pos = (end_pos_x[i], end_pos_y[i])
-            color = tuple(colors[i])
-            bar_width = bar_widths[i]
+            color = tuple(self.bar_colors[i])
+            bar_width = self.bar_widths[i]
             pygame.draw.line(surface, color, start_pos, end_pos, bar_width)
 
     def quit(self):
