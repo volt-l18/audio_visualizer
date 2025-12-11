@@ -8,3 +8,6 @@ src/__pycache__/
 
 # Output files
 outputs/
+
+# Audio file
+assets/audio/*
