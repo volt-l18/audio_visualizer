@@ -2,4 +2,3 @@ pygame==2.6.1
 numpy==2.2.6
 pyglet==2.1.11
 librosa==0.11.0
-black==24.4.2
