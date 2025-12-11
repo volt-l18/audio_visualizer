@@ -23,7 +23,7 @@ BAR_HEIGHT_MULTIPLIER = 10
 
 # A smoothing factor for bar height changes. The value should be between 0.0 (no smoothing)
 # and 1.0 (no change). A higher value results in smoother transitions between heights.
-SMOOTHING = 0.95
+SMOOTHING = 0.8
 
 # The background color of the visualizer window.
 BACKGROUND_COLOR = (5, 5, 25)
@@ -35,7 +35,7 @@ BAR_COLOR_END = (220, 50, 105)
 # --- Audio Analysis Settings ---
 # The Fast Fourier Transform (FFT) size. This determines the resolution of the frequency analysis.
 # It should be a power of 2 for optimal performance.
-FFT_SIZE = 1024 * 2
+FFT_SIZE = 4096
 
 # The frame rate at which the visualization updates.
 FRAME_RATE = 30

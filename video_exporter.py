@@ -1,4 +1,5 @@
 import subprocess
+import os
 import config
 
 
@@ -14,7 +15,12 @@ class VideoExporter:
             height (int): The height of the video.
             audio_file (str): The path to the audio file to be included in the video.
         """
+        self.width = width
+        self.height = height
+        self.audio_file = audio_file
+        
         if config.EXPORT_VIDEO:
+            # 1. First pass: Generate video only to a temp file
             command = [
                 "ffmpeg",
                 "-y",  # Overwrite output file if it exists
@@ -30,15 +36,11 @@ class VideoExporter:
                 str(config.EXPORT_FPS),
                 "-i",
                 "-",  # Input from stdin
-                "-i",
-                audio_file,
                 "-c:v",
                 "libx264",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "192k",
-                config.EXPORT_FILENAME,
+                "-pix_fmt",
+                "yuv420p", # Standard pixel format for compatibility
+                config.TEMP_VIDEO_FILENAME,
             ]
             self.ffmpeg_process = subprocess.Popen(command, stdin=subprocess.PIPE)
         else:
@@ -55,7 +57,31 @@ class VideoExporter:
             self.ffmpeg_process.stdin.write(frame_data)
 
     def close(self):
-        """Closes the ffmpeg process."""
+        """Closes the ffmpeg process and merges audio."""
         if self.ffmpeg_process:
             self.ffmpeg_process.stdin.close()
             self.ffmpeg_process.wait()
+            
+            # 2. Second pass: Merge audio and video
+            print("Merging audio and video...")
+            merge_command = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                config.TEMP_VIDEO_FILENAME,
+                "-i",
+                self.audio_file,
+                "-c:v",
+                "copy", # Copy video stream directly
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                config.EXPORT_FILENAME
+            ]
+            subprocess.run(merge_command)
+            
+            # 3. Cleanup
+            if os.path.exists(config.TEMP_VIDEO_FILENAME):
+                os.remove(config.TEMP_VIDEO_FILENAME)
+            print(f"Export complete: {config.EXPORT_FILENAME}")

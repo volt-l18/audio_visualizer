@@ -29,6 +29,16 @@ class VisualizerWindow:
         )
         pygame.display.set_caption("Audio Visualizer")
 
+        # Determine render resolution
+        if config.EXPORT_VIDEO:
+            self.render_width = config.EXPORT_WIDTH
+            self.render_height = config.EXPORT_HEIGHT
+        else:
+            self.render_width = self.width
+            self.render_height = self.height
+        
+        self.render_surface = pygame.Surface((self.render_width, self.render_height))
+
         self.audio_processor = audio_processor
         self.clock = pygame.time.Clock()
         self.running = True
@@ -36,6 +46,7 @@ class VisualizerWindow:
 
         # Visualizer state
         self.smoothed_magnitudes = np.zeros(config.BINS)
+        self.current_frame = 0
 
         # Video export setup
         self.video_exporter = None
@@ -51,7 +62,9 @@ class VisualizerWindow:
         """
         Starts the main event loop for the visualizer.
         """
-        self.audio_processor.play()
+        if not config.EXPORT_VIDEO:
+            self.audio_processor.play()
+
         while self.running:  # Loop continues as long as self.running is True
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -73,7 +86,12 @@ class VisualizerWindow:
         Updates the visualizer state.
         """
         # Get audio features
-        magnitudes = self.audio_processor.get_audio_features()
+        if config.EXPORT_VIDEO:
+            timestamp = self.current_frame / config.EXPORT_FPS
+            magnitudes = self.audio_processor.get_audio_features(timestamp=timestamp)
+            self.current_frame += 1
+        else:
+            magnitudes = self.audio_processor.get_audio_features()
 
         if magnitudes is None:
             if not self.audio_ended:
@@ -94,14 +112,19 @@ class VisualizerWindow:
         """
         Draws the visualizer on the screen.
         """
-        self.screen.fill(config.BACKGROUND_COLOR)
-        self._draw_bars(self.smoothed_magnitudes)
+        # 1. Draw to the internal render surface (at full resolution)
+        self.render_surface.fill(config.BACKGROUND_COLOR)
+        self._draw_bars(self.smoothed_magnitudes, self.render_surface)
+
+        # 2. Scale and draw to the display window
+        scaled_surface = pygame.transform.scale(self.render_surface, (self.width, self.height))
+        self.screen.blit(scaled_surface, (0, 0))
         pygame.display.flip()
 
         if self.audio_ended:
             if self.video_exporter:
                 if self.eos_frames > 0:
-                    frame_data = pygame.image.tostring(self.screen, "RGBA")
+                    frame_data = pygame.image.tostring(self.render_surface, "RGBA")
                     self.video_exporter.write_frame(frame_data)
                     self.eos_frames -= 1
                 else:
@@ -109,17 +132,20 @@ class VisualizerWindow:
             else:
                 self.running = False
         elif self.video_exporter:
-            frame_data = pygame.image.tostring(self.screen, "RGBA")
+            frame_data = pygame.image.tostring(self.render_surface, "RGBA")
             self.video_exporter.write_frame(frame_data)
 
-    def _draw_bars(self, magnitudes):
+    def _draw_bars(self, magnitudes, surface):
         """
         Draws the visualizer bars.
 
         Args:
             magnitudes (np.ndarray): A numpy array of frequency magnitudes.
+            surface (pygame.Surface): The surface to draw onto.
         """
-        center_x, center_y = self.width // 2, self.height // 2
+        surface_width = surface.get_width()
+        surface_height = surface.get_height()
+        center_x, center_y = surface_width // 2, surface_height // 2
         num_bars = len(magnitudes)
 
         # Vectorized calculations
@@ -154,7 +180,7 @@ class VisualizerWindow:
             end_pos = (end_pos_x[i], end_pos_y[i])
             color = tuple(colors[i])
             bar_width = bar_widths[i]
-            pygame.draw.line(self.screen, color, start_pos, end_pos, bar_width)
+            pygame.draw.line(surface, color, start_pos, end_pos, bar_width)
 
     def quit(self):
         """

@@ -32,7 +32,7 @@ class AudioProcessor:
             # Load with librosa for analysis
             # Note: This loads the entire audio file into memory.
             # For very large files, a streaming approach would be more memory-efficient.
-            self.y, self.sr = librosa.load(audio_file)
+            self.y, self.sr = librosa.load(audio_file, sr=None)
             self.fft_size = config.FFT_SIZE
 
         except Exception as e:
@@ -46,18 +46,27 @@ class AudioProcessor:
         """Starts audio playback."""
         self.player.play()
 
-    def get_audio_features(self):
+    def get_audio_features(self, timestamp=None):
         """
         Performs FFT on the current audio chunk and returns binned magnitudes.
+
+        Args:
+            timestamp (float, optional): The time in seconds to analyze. 
+                                         If None, uses the current player time.
 
         Returns:
             list: A list of processed frequency magnitudes for each bin.
         """
-        if self.player.time >= self.duration:
+        if timestamp is None:
+            current_time = self.player.time
+        else:
+            current_time = timestamp
+
+        if current_time >= self.duration:
             return None
 
         # Get current audio position and corresponding sample
-        current_sample = int(self.player.time * self.sr)
+        current_sample = int(current_time * self.sr)
 
         # Get chunk of audio data
         chunk = self.y[current_sample : current_sample + self.fft_size]
@@ -99,7 +108,7 @@ class AudioProcessor:
 
         # Ensure that each bin has at least one FFT bin
         for i in range(len(bin_indices) - 1):
-            if bin_indices[i] == bin_indices[i + 1]:
+            if bin_indices[i + 1] <= bin_indices[i]:
                 bin_indices[i + 1] = bin_indices[i] + 1
 
         return bin_indices
