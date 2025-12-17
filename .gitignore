@@ -8,6 +8,7 @@ src/__pycache__/
 
 # Output files
 outputs/
+GEMINI.md
 
 # Audio file
 assets/audio/*
