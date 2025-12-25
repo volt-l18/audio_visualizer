@@ -55,6 +55,7 @@ class VisualizerWindow:
                 config.EXPORT_WIDTH,
                 config.EXPORT_HEIGHT,
                 self.audio_processor.audio_file,
+                self.audio_processor.duration,
             )
 
         self._precalculate_visuals()
